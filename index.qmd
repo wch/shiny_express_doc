@@ -1,0 +1,268 @@
+---
+title: "Shiny Express"
+format: html
+filters:
+  - shinylive
+---
+
+Shiny Express is a new way of writing Shiny apps that's intended to be easier to learn and easier to write. It is especially designed for beginners and for simple apps.
+
+## Quickstart
+
+The best way to introduce Shiny Express is by example. Here is a simple "Hello World" app:
+
+
+```{shinylive-python}
+#| standalone: true
+#| components: [editor, viewer]
+#| layout: vertical
+#| viewerHeight: 300
+import matplotlib.pyplot as plt
+import numpy as np
+from shiny import ui, render
+from shiny.express import input, layout
+
+np.random.seed(0)
+data = np.random.randn(10000)
+
+with layout.sidebar():
+    ui.input_slider("num_bins", "Number of Bins", min=1, max=50, value=30)
+
+@render.plot
+def plot():
+    plt.hist(data, bins=input.num_bins())
+```
+
+As of this writing, Shiny Express has been merged to main but not published to PyPI. Therefore, to run this code, you’ll currently need to install Shiny from GitHub:
+
+```
+pip install git+https://github.com/posit-dev/py-shiny
+```
+
+Contrast the Shiny Express code above with the Shiny Classic equivalent below:
+
+```{shinylive-python}
+#| standalone: true
+#| components: [editor, viewer]
+#| layout: vertical
+#| viewerHeight: 300
+import matplotlib.pyplot as plt
+import numpy as np
+from shiny import App, ui, render
+
+np.random.seed(0)
+data = np.random.randn(10000)
+
+app_ui = ui.page_sidebar(
+    ui.sidebar(
+        ui.input_slider("num_bins", "Number of Bins", min=1, max=50, value=30),
+    ),
+    ui.output_plot("plot"),
+)
+
+def server(input, output, session):
+    @render.plot
+    def plot():
+        plt.hist(data, bins=input.num_bins())
+
+app = App(app_ui, server)
+```
+
+Not only is there significantly less code in the Express version, but there are fewer concepts to (mis)understand or be intimidated by.
+
+The equivalent in Streamlit:
+
+```py
+# streamlit_app.py
+import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
+
+np.random.seed(0)
+data = np.random.randn(10000)
+
+with st.sidebar:
+    num_bins = st.slider('Number of Bins', min_value=1, max_value=50, value=30)
+
+fig, ax = plt.subplots()
+ax.hist(data, bins=num_bins)
+st.pyplot(fig)
+```
+
+The Streamlit version is even simpler, but now by only a small margin. Hopefully a small price to pay to be freed from top-to-bottom execution.
+
+## Motivation
+
+The traditional ("Classic", for now) way of writing Shiny apps was intended to be easy and concise, while also being able to scale to extremely complex apps. The balance we struck was extremely successful in the R community.
+
+In the Python community, we are preceded by many high-level data science app frameworks, most notably Streamlit, which strikes a very different balance: it is absurdly easy and concise, and scales with complexity quite poorly. With this tradeoff, it has apparently become the dominant framework in Python—in mindshare if nothing else.
+
+By comparison, Shiny appears quite complex. With Shiny Express, the hope is to introduce a gentler simplicity/power tradeoff, that is nearly as easy as Streamlit but 1) not nearly as limited, and 2) leads you most of the way to Shiny Classic.
+
+## Caveats
+
+While we believe that Shiny Express will turn out to be an effective tool for those new to Shiny, we also believe that it will not be appropriate for all use cases--hence our continuing belief in the Shiny Classic model. A recurring theme you will find in the finer points below is that Shiny Express is easier to write but harder to manipulate and reason about, while Shiny Classic demands more up-front learning and some small inconveniences in return for being easier to read and reason about as your apps get larger.
+
+We also want to acknowledge the inherent risk of introducing a second (or depending on how you count, also a third and fourth!) way of writing Shiny apps. One risk is that Shiny Express will lead users into a learning cul-de-sac that is then harder to grow out of (and into Shiny Classic) than if they had just learned Shiny in the first place--as we see Streamlit users cling to it long after they have left the domain where Streamlit works well. Another risk is that having two ways of doing things is just going to be confusing (see Panel, or on the mostly-positive side, Matplotlib).
+
+## Differences between Express and Classic
+
+The main differences between Shiny Express and Classic are the following:
+
+- Shiny Express apps have `from shiny.express import ...`, `import shiny.express`, or `from shiny import express`. The presence of any of these statements tells Shiny that the app should be run in Express mode.
+
+
+### No separation between UI and server code
+
+In Classic, UI and server logic are declared separately, with the UI containing `ui.output_xxx` objects to indicate _where_ each output goes and the server containing the logic indicating _what_ each output is.
+
+
+```{shinylive-python}
+#| standalone: true
+#| components: [editor, viewer]
+# Classic
+from shiny import ui, render, reactive, App
+from datetime import datetime
+
+app_ui = ui.page_fluid(
+    ui.h1("Title"),
+    ui.output_text_verbatim("greeting"),
+)
+
+def server(input, output, session):
+    @reactive.Calc
+    def time():
+        reactive.invalidate_later(1)
+        return datetime.now()
+
+    @render.text
+    def greeting():
+        return f"Hello, world!\nIt's currently {time()}."
+
+app = App(app_ui, server)
+```
+
+In Shiny Express, the top level of the Python file can contain both UI expressions and server declarations, in any order. By default, declaring a render function causes it to appear right in that spot.
+
+```{shinylive-python}
+#| standalone: true
+#| components: [editor, viewer]
+# Express
+from shiny import ui, render, reactive, App
+import shiny.express
+from datetime import datetime
+
+ui.h1("Title")
+
+@reactive.Calc
+def time():
+    reactive.invalidate_later(1)
+    return datetime.now()
+
+@render.text
+def greeting():
+    return f"Hello, world!\nIt's currently {time()}."
+```
+
+#### Express advantages:
+
+- It's nice for beginners not to have to learn about the difference between UI and server.
+- Avoids having to write code in two different places for a single output, and having to make the IDs match up.
+- No need to write nested function declarations (i.e. functions inside the server function), which can be surprising to Python programmers.
+
+#### Classic advantages:
+
+- UI structure is easier to read, reorder, and restructure. This advantage grows as app UIs grow larger.
+- Explicit server function declaration gave us a natural place to put code that should only execute at startup (top level) versus for each session (server function body).
+- No confusion about when `input`/`output`/`session` can be used.
+
+### UI as display
+
+In Shiny Classic, you create UI by calling pure functions that return objects, and containership is expressed by passing children as arguments into the parent when the latter is being created. Eventually, the top-level parent is passed to Shiny via the `App` object (or returned from a `@render.ui`).
+
+```py
+# Shiny Classic
+app_ui = ui.page_fluid(
+    widget1(),
+    widget2(),
+    widget3(),
+)
+
+app = App(app_ui, ...)
+```
+
+In Shiny Express, top-level expressions/statements are evaluated in order, and any non-`None` expression has `display()` called on it. This is intended to feel similar to a code chunk in .rmd or .qmd, or like a Jupyter notebook (with `InteractiveShell.ast_node_interactivity="all"`).
+
+```py
+# Shiny Express
+widget1()
+w2 = widget2()  # Not displayed
+w2              # Now it's displayed
+widget3()
+```
+
+There's an inherent tension in these decisions. What seems to be the case is that from a superficial level, _imperative_ UI feels more intuitive than _functional_ UI--that is, calling `button()` should immediately "output" a button at the moment it's called, rather than returning some kind of value. And indeed, there are UI frameworks that take this approach, including Streamlit.
+
+But imperative UI starts to run into trouble very quickly, because programming against side-effects is harder than programming against values. For example, consider a function that takes a title as an argument, which could either be a string or an HTML element. How would you pass an HTML element if the very act of constructing an `<h1>` causes it to be emitted as output? Or think about a function that takes a while to generate some UI; if UI is just returned objects, you can trivially cache the results in any number of naturally Pythonic ways, but if it's side effects you have to figure out some way of intercepting those side effects, and cache them using some custom mechanism.
+
+The `display()` approach of Jupyter/Quarto/Express serves as a compromise between Shiny Classic's functional approach and Streamlit's imperative approach. The code looks very similar to imperative code, but we're able to re-use most of our UI components even though they use the pure functional style. (Existing container components cannot be used in Express, as explained in the next section.)
+
+One special challenge is dealing with expressions that are not at the top-level; that is, in functions. If you define a function in a Quarto code chunk or Jupyter notebook cell, its expressions will not be displayed/printed. The same is true in Shiny Express. However, it's clearly desirable to be able to write functions that express UI, and it'd be great to do it without having to explicitly call `sys.displayhook()` on every piece of UI. The `@display_body` decorator does this by transforming a function's body to behave like the top level (and see also `@render.display`, which is sort of like `@render.ui` plus `@display_body` combined).
+
+#### Express advantages:
+
+- Same/similar paradigm as Quarto chunk or Jupyter notebook cell.
+- Fewer commas/parentheses.
+
+#### Classic advantages:
+
+- Easier refactoring of complicated UI (extracting into variables, parameterized functions, caching, etc.).
+- Can write apps in Python modules/packages.
+
+
+### Containers as context managers
+
+The prior two differences make container components a special challenge for Shiny Express. Shiny Classic's UI components are passed as function arguments, but Shiny Express's render functions make this approach untenable; Python won't let you declare a decorated function and pass it as a function argument at the same time.
+
+As a result, you can't use Shiny Classic's container UI functions with Shiny Express. Instead, we've created a Shiny Express port for each of our container functions.
+
+Classic syntax:
+
+```py
+# Shiny Classic
+app_ui = ui.page_fluid(
+    ui.card(
+        ui.input_slider(),
+        ui.output_plot("plot"),
+    )
+)
+
+app = App(app_ui, ...)
+```
+
+Express syntax:
+
+```py
+# Shiny Express
+from shiny.express import layout
+
+with layout.card():
+    ui.input_slider()
+
+    @render.plot
+    def plot():
+        ...
+```
+
+These new `shiny.express.layout` container functions do not return objects, but rather, Python context managers that are side-effecty (they intercept `sys.displayhook` while inside the `with` block, and `display()` themselves upon exit).
+
+#### Express advantages:
+
+- Makes it possible to put render functions inside UI containers.
+- Fewer commas/parentheses.
+
+#### Classic advantages:
+
+- As before, easier refactoring of complicated UI (extracting into variables, parameterized functions, caching, etc.).
+- Container function signatures make it easier to see what arguments are allowed/required.
+- No difference between child and container UI functions, in terms of: how you call them, how you handle their results, and how you write your own.

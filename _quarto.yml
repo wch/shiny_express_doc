@@ -1,0 +1,17 @@
+project:
+  type: website
+  output-dir: docs
+  render:
+    - /index.qmd
+
+website:
+  title: "Shiny Express mode"
+  # navbar:
+  #   search: true
+  #   right:
+  #     - icon: github
+  #       href: https://github.com/quarto-ext/shinylive-quarto
+
+format:
+  html:
+    toc: true
