@@ -11,6 +11,68 @@ Shiny Express is a new way of writing Shiny apps that's intended to be easier to
 
 The best way to introduce Shiny Express is by example. Here is a simple "Hello World" app:
 
+```{shinylive-python}
+#| standalone: true
+#| components: [editor, viewer]
+#| layout: vertical
+
+from shiny import ui, render
+from shiny.express import input
+
+ui.input_slider("n", "N", min=1, max=50, value=30)
+
+@render.text
+def txt():
+    return f"Hello! n*2 is {input.n() * 2}."
+```
+
+The slider input comes from `ui.input_slider()`, and the text output is a function that's decorated with `@render.text` and returns a string.
+
+If you've seen traditional Shiny applications (we'll call them "Classic" for now), you'll notice some important differences. Here's the same app written in Shiny Classic form:
+
+```{shinylive-python}
+#| standalone: true
+#| components: [editor, viewer]
+#| layout: vertical
+#| viewerHeight: 300
+from shiny import App, ui, render
+
+app_ui = ui.page_fluid(
+    ui.input_slider("n", "N", min=1, max=50, value=30),
+    ui.output_text_verbatim("txt"),
+)
+
+def server(input, output, session):
+    @render.text
+    def txt():
+        return f"Hello! n*2 is {input.n() * 2}."
+
+app = App(app_ui, server)
+```
+
+Not only is there significantly less code in the Express version, but there are fewer concepts to (mis)understand or be intimidated by.
+
+Here's what's different in the Classic app:
+- The UI is created explicitly in a variable named `app_ui`, using nested calls to UI component functions.
+- There is an explicitly defined server function. (This function is executed once for each browser session that connects to the app).
+- The text output is created with `output_text_verbatim("txt")`. For Shiny Express mode, we didn't have to create that output -- it's created automatically when it sees the `@render.text`.
+- There is an explicitly created object named `app`, which is a `shiny.App()` object.
+
+Shiny Express apps do a these things implicitly, instead of requiring you to do them explicitly.
+
+
+As of this writing, Shiny Express has been merged to main but not published to PyPI. It can also be used on [shinylive.io](https://shinylive.io/py/examples/). (For embedding Shinylive applications in Quarto documents, it is technically possible, as this document shows, but it is a manual process as of this writing.)
+
+To run these examples, you can use shinylive,io, or you can install Shiny and htmltools from GitHub:
+
+```
+pip install git+https://github.com/posit-dev/py-htmltools
+pip install git+https://github.com/posit-dev/py-shiny
+```
+
+## Basic app with a plot
+
+The example above shows a very bare-bones Shiny application. Here's one that's a little more sophisticated, with a layout component (a sidebar), and a plot.
 
 ```{shinylive-python}
 #| standalone: true
@@ -31,12 +93,6 @@ with layout.sidebar():
 @render.plot
 def plot():
     plt.hist(data, bins=input.num_bins())
-```
-
-As of this writing, Shiny Express has been merged to main but not published to PyPI. Therefore, to run this code, you’ll currently need to install Shiny from GitHub:
-
-```
-pip install git+https://github.com/posit-dev/py-shiny
 ```
 
 Contrast the Shiny Express code above with the Shiny Classic equivalent below:
@@ -68,36 +124,18 @@ def server(input, output, session):
 app = App(app_ui, server)
 ```
 
-Not only is there significantly less code in the Express version, but there are fewer concepts to (mis)understand or be intimidated by.
-
-The equivalent in Streamlit:
-
-```py
-# streamlit_app.py
-import streamlit as st
-import numpy as np
-import matplotlib.pyplot as plt
-
-np.random.seed(0)
-data = np.random.randn(10000)
-
-with st.sidebar:
-    num_bins = st.slider('Number of Bins', min_value=1, max_value=50, value=30)
-
-fig, ax = plt.subplots()
-ax.hist(data, bins=num_bins)
-st.pyplot(fig)
-```
-
-The Streamlit version is even simpler, but now by only a small margin. Hopefully a small price to pay to be freed from top-to-bottom execution.
+Some things to notice:
+- In the Classic app, we first used the page-level component `ui.page_sidebar()`, and nested inside of that, a `ui.sidebar()`.
+- In the Express app, we created a sidebar using `with layout.sidebar()`. (Under the hood, this component tells Shiny Express that the parent page component is `ui.page_sidebar()`).
+- Notice that with the Express app used `express.layout.sidebar()`, while the Classic app used `ui.sidebar()`. These are not quite the same thing -- the function in `express.layout` is actually a special wrapper for the function in `ui`, which can be used as a context manager.
 
 ## Motivation
 
-The traditional ("Classic", for now) way of writing Shiny apps was intended to be easy and concise, while also being able to scale to extremely complex apps. The balance we struck was extremely successful in the R community.
+Shiny Classic applications
+With Shiny Express, our hope is to introduce a gentler simplicity/power tradeoff, that is nearly as easy as Streamlit but 1) not nearly as limited, and 2) leads you most of the way to Shiny Classic.
 
-In the Python community, we are preceded by many high-level data science app frameworks, most notably Streamlit, which strikes a very different balance: it is absurdly easy and concise, and scales with complexity quite poorly. With this tradeoff, it has apparently become the dominant framework in Python—in mindshare if nothing else.
-
-By comparison, Shiny appears quite complex. With Shiny Express, the hope is to introduce a gentler simplicity/power tradeoff, that is nearly as easy as Streamlit but 1) not nearly as limited, and 2) leads you most of the way to Shiny Classic.
+TODO: Continue here
+========
 
 ## Caveats
 
