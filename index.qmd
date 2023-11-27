@@ -315,13 +315,13 @@ layout.set_page(layout_page_fixed())
 
 To deploy Shiny Express apps on a Connect server or shinyapps.io, you will need to install a development version of the rsconnect-python package:
 
-```
+```default
 pip install git+https://github.com/rstudio/rsconnect-python@shiny-express
 ```
 
 You will also need to provide a `requirements.txt` file which tells the server to install htmltools and shiny from GitHub:
 
-```
+```default
 # requirements.txt
 htmltools@git+https://github.com/posit-dev/py-htmltools.git@main
 shiny@git+https://github.com/posit-dev/py-shiny.git@main
@@ -329,6 +329,6 @@ shiny@git+https://github.com/posit-dev/py-shiny.git@main
 
 Then deploy the app as usual. If you are in the directory containing the app, use the following command, replacing `<server name>` with the nickname for your server.
 
-```
+```default
 rsconnect deploy shiny . -n <server name>
 ```
