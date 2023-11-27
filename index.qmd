@@ -7,6 +7,10 @@ filters:
 
 Shiny Express is a new way of writing Shiny apps that's intended to be easier to learn and quicker to write. It is especially appropriate for beginners and for simple apps.
 
+::: {.callout-note}
+Shiny Express is still in active development. If you have comments or questions, please use the the [#py-shiny channel in Discord](https://discord.com/channels/1109483223987277844/1112869981735104553).
+:::
+
 ## Quickstart
 
 The best way to introduce Shiny Express is by example. Here is a simple "Hello World" app:
