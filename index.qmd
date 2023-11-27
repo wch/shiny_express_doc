@@ -5,7 +5,7 @@ filters:
   - shinylive
 ---
 
-Shiny Express is a new way of writing Shiny apps that's intended to be easier to learn and easier to write. It is especially designed for beginners and for simple apps.
+Shiny Express is a new way of writing Shiny apps that's intended to be easier to learn and quicker to write. It is especially appropriate for beginners and for simple apps.
 
 ## Quickstart
 
@@ -53,6 +53,7 @@ app = App(app_ui, server)
 Not only is there significantly less code in the Express version, but there are fewer concepts to (mis)understand or be intimidated by.
 
 Here's what's different in the Classic app:
+
 - The UI is created explicitly in a variable named `app_ui`, using nested calls to UI component functions.
 - There is an explicitly defined server function. (This function is executed once for each browser session that connects to the app).
 - The text output is created with `output_text_verbatim("txt")`. For Shiny Express mode, we didn't have to create that output -- it's created automatically when it sees the `@render.text`.
@@ -63,12 +64,13 @@ Shiny Express apps do a these things implicitly, instead of requiring you to do 
 
 As of this writing, Shiny Express has been merged to main but not published to PyPI. It can also be used on [shinylive.io](https://shinylive.io/py/examples/). (For embedding Shinylive applications in Quarto documents, it is technically possible, as this document shows, but it is a manual process as of this writing.)
 
-To run these examples, you can use shinylive,io, or you can install Shiny and htmltools from GitHub:
+To run these examples, you can use [shinylive.io](https://shinylive.io/py/examples/), or you can install shiny and htmltools from GitHub:
 
 ```
 pip install git+https://github.com/posit-dev/py-htmltools
 pip install git+https://github.com/posit-dev/py-shiny
 ```
+
 
 ## Basic app with a plot
 
@@ -125,6 +127,7 @@ app = App(app_ui, server)
 ```
 
 Some things to notice:
+
 - In the Classic app, we first used the page-level component `ui.page_sidebar()`, and nested inside of that, a `ui.sidebar()`.
 - In the Express app, we created a sidebar using `with layout.sidebar()`. (Under the hood, this component tells Shiny Express that the parent page component is `ui.page_sidebar()`).
 - Notice that with the Express app used `express.layout.sidebar()`, while the Classic app used `ui.sidebar()`. These are not quite the same thing -- the function in `express.layout` is actually a special wrapper for the function in `ui`, which can be used as a context manager.
@@ -133,9 +136,6 @@ Some things to notice:
 
 Shiny Classic applications
 With Shiny Express, our hope is to introduce a gentler simplicity/power tradeoff, that is nearly as easy as Streamlit but 1) not nearly as limited, and 2) leads you most of the way to Shiny Classic.
-
-TODO: Continue here
-========
 
 ## Caveats
 
@@ -147,13 +147,14 @@ We also want to acknowledge the inherent risk of introducing a second (or depend
 
 The main differences between Shiny Express and Classic are the following:
 
+- There is no separation between UI and server code. The UI and server code is mixed together.
+- In Shiny Express, UI components can be nested by writing `with layout.xx()`, where `layout.xx()` is a component that can contain other UI elements.
 - Shiny Express apps have `from shiny.express import ...`, `import shiny.express`, or `from shiny import express`. The presence of any of these statements tells Shiny that the app should be run in Express mode.
 
 
 ### No separation between UI and server code
 
 In Classic, UI and server logic are declared separately, with the UI containing `ui.output_xxx` objects to indicate _where_ each output goes and the server containing the logic indicating _what_ each output is.
-
 
 ```{shinylive-python}
 #| standalone: true
@@ -202,6 +203,8 @@ def greeting():
     return f"Hello, world!\nIt's currently {time()}."
 ```
 
+Notice how `greeting` in this app does _not_ have a corresponding call to `output_text_verbatim("greeting")`. This is because in Shiny Express, the `render` functions automatically invoke that output function and add it to the page -- no need to do it manually.
+
 #### Express advantages:
 
 - It's nice for beginners not to have to learn about the difference between UI and server.
@@ -210,97 +213,122 @@ def greeting():
 
 #### Classic advantages:
 
-- UI structure is easier to read, reorder, and restructure. This advantage grows as app UIs grow larger.
+- UI structure is clearer to read, reorder, and restructure. This advantage grows as app UIs grow larger.
 - Explicit server function declaration gave us a natural place to put code that should only execute at startup (top level) versus for each session (server function body).
-- No confusion about when `input`/`output`/`session` can be used.
 
-### UI as display
+### Layout components using `with layout.xx()`
 
-In Shiny Classic, you create UI by calling pure functions that return objects, and containership is expressed by passing children as arguments into the parent when the latter is being created. Eventually, the top-level parent is passed to Shiny via the `App` object (or returned from a `@render.ui`).
+We'll use the term _layout components_ to refer to components that contain other components as children. For example, a sidebar is a layout component because it contains other components, whereas a `input_text()` is not a layout component because it has no children.
 
-```py
-# Shiny Classic
-app_ui = ui.page_fluid(
-    widget1(),
-    widget2(),
-    widget3(),
-)
+In Shiny Classic, all components are available from the `ui` submodule, for example, `ui.sidebar()`, and `ui.input_text()`. You might create a simple app UI like this:
 
-app = App(app_ui, ...)
-```
+```{shinylive-python}
+#| standalone: true
+#| components: [editor, viewer]
+#| layout: vertical
+# Classic
+from shiny import ui, render, App
 
-In Shiny Express, top-level expressions/statements are evaluated in order, and any non-`None` expression has `display()` called on it. This is intended to feel similar to a code chunk in .rmd or .qmd, or like a Jupyter notebook (with `InteractiveShell.ast_node_interactivity="all"`).
-
-```py
-# Shiny Express
-widget1()
-w2 = widget2()  # Not displayed
-w2              # Now it's displayed
-widget3()
-```
-
-There's an inherent tension in these decisions. What seems to be the case is that from a superficial level, _imperative_ UI feels more intuitive than _functional_ UI--that is, calling `button()` should immediately "output" a button at the moment it's called, rather than returning some kind of value. And indeed, there are UI frameworks that take this approach, including Streamlit.
-
-But imperative UI starts to run into trouble very quickly, because programming against side-effects is harder than programming against values. For example, consider a function that takes a title as an argument, which could either be a string or an HTML element. How would you pass an HTML element if the very act of constructing an `<h1>` causes it to be emitted as output? Or think about a function that takes a while to generate some UI; if UI is just returned objects, you can trivially cache the results in any number of naturally Pythonic ways, but if it's side effects you have to figure out some way of intercepting those side effects, and cache them using some custom mechanism.
-
-The `display()` approach of Jupyter/Quarto/Express serves as a compromise between Shiny Classic's functional approach and Streamlit's imperative approach. The code looks very similar to imperative code, but we're able to re-use most of our UI components even though they use the pure functional style. (Existing container components cannot be used in Express, as explained in the next section.)
-
-One special challenge is dealing with expressions that are not at the top-level; that is, in functions. If you define a function in a Quarto code chunk or Jupyter notebook cell, its expressions will not be displayed/printed. The same is true in Shiny Express. However, it's clearly desirable to be able to write functions that express UI, and it'd be great to do it without having to explicitly call `sys.displayhook()` on every piece of UI. The `@display_body` decorator does this by transforming a function's body to behave like the top level (and see also `@render.display`, which is sort of like `@render.ui` plus `@display_body` combined).
-
-#### Express advantages:
-
-- Same/similar paradigm as Quarto chunk or Jupyter notebook cell.
-- Fewer commas/parentheses.
-
-#### Classic advantages:
-
-- Easier refactoring of complicated UI (extracting into variables, parameterized functions, caching, etc.).
-- Can write apps in Python modules/packages.
-
-
-### Containers as context managers
-
-The prior two differences make container components a special challenge for Shiny Express. Shiny Classic's UI components are passed as function arguments, but Shiny Express's render functions make this approach untenable; Python won't let you declare a decorated function and pass it as a function argument at the same time.
-
-As a result, you can't use Shiny Classic's container UI functions with Shiny Express. Instead, we've created a Shiny Express port for each of our container functions.
-
-Classic syntax:
-
-```py
-# Shiny Classic
-app_ui = ui.page_fluid(
+app_ui = ui.page_sidebar(
+    ui.sidebar(
+        ui.input_text("txt_in", "Type something here:"),
+        fg="white",
+        bg="black",
+    ),
     ui.card(
-        ui.input_slider(),
-        ui.output_plot("plot"),
+        ui.output_text_verbatim("result"),
     )
 )
 
-app = App(app_ui, ...)
+def server(input, output, session):
+    @render.text
+    def result():
+        return f"You entered '{input.txt_in()}'."
+
+app = App(app_ui, server)
 ```
 
-Express syntax:
 
-```py
-# Shiny Express
-from shiny.express import layout
+In Express apps, there are the following differences:
+
+- There's no need to call `page_sidebar()` -- simply using `ui.sidebar()` tells Shiny to use `page_sidebar()`.
+- Instead of `ui.sidebar()`, you use `with layout.sidebar()`. You still call `layout.sidebar()` with the named arguments, like `fg` and `bg`. The unnamed arguments will be used as children to the `sidebar`.
+- You can even put the server code inside of the `with` statement.
+
+```{shinylive-python}
+#| standalone: true
+#| components: [editor, viewer]
+#| layout: vertical
+# Express
+from shiny import ui, render, App
+from shiny.express import input, layout
+
+with layout.sidebar(fg="white", bg="black"):
+    ui.input_text("txt_in", "Type something here:")
 
 with layout.card():
-    ui.input_slider()
-
-    @render.plot
-    def plot():
-        ...
+    @render.text
+    def result():
+        return f"You entered '{input.txt_in()}'."
 ```
 
-These new `shiny.express.layout` container functions do not return objects, but rather, Python context managers that are side-effecty (they intercept `sys.displayhook` while inside the `with` block, and `display()` themselves upon exit).
+Most of the layout component functions from `shiny.ui` have corresponding functions in `shiny.express.layout`. If you find that Express lacks a layout component that you need, please let us know.
 
-#### Express advantages:
+Shiny Express layout functions can be nested, as in:
 
-- Makes it possible to put render functions inside UI containers.
-- Fewer commas/parentheses.
+```{.python}
+with layout.row():
+    with layout.column(6):
+        # Content here...
+```
 
-#### Classic advantages:
+In an Express app, you can also still use Classic layout components, like this:
 
-- As before, easier refactoring of complicated UI (extracting into variables, parameterized functions, caching, etc.).
-- Container function signatures make it easier to see what arguments are allowed/required.
-- No difference between child and container UI functions, in terms of: how you call them, how you handle their results, and how you write your own.
+```{.python}
+ui.row(
+    ui.column(
+        ...,
+        width=6
+    )
+)
+```
+
+This can be useful in some cases, like if you're writing a function that returns some UI.
+
+
+### Page-level containers
+
+In a Classic app, the UI always has a top-level `page_` container, like `page_fluid()`, or `page_sidebar()`.
+
+In an Express app, there is also a top-level `page_` container, but the user does not need to call the function explicitly.
+
+The default page container is `page_fluid()`. However, if you call `with layout.sidebar()`, then it will automatically set the page container to `page_sidebar()`.
+
+You can set the page-level container explicitly by calling `layout.set_page()`. For example, suppose you want to use `page_fixed()` instead of `page_fluid()`, because you want a fixed-width content area. You would simply call this at the top of your app:
+
+```{.python}
+layout.set_page(layout_page_fixed())
+```
+
+
+## Deploying Shiny Express apps
+
+To deploy Shiny Express apps on a Connect server or shinyapps.io, you will need to install a development version of the rsconnect-python package:
+
+```
+pip install git+https://github.com/rstudio/rsconnect-python@shiny-express
+```
+
+You will also need to provide a `requirements.txt` file which tells the server to install htmltools and shiny from GitHub:
+
+```
+# requirements.txt
+htmltools@git+https://github.com/posit-dev/py-htmltools.git@main
+shiny@git+https://github.com/posit-dev/py-shiny.git@main
+```
+
+Then deploy the app as usual. If you are in the directory containing the app, use the following command, replacing `<server name>` with the nickname for your server.
+
+```
+rsconnect deploy shiny . -n <server name>
+```
