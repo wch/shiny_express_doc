@@ -67,13 +67,13 @@ Here's what's different in the Classic app:
 
 Shiny Express apps do a these things implicitly, instead of requiring you to do them explicitly.
 
-### Installation
+## Installation
 
 As of this writing, Shiny Express has been merged to main but not published to PyPI. It can also be used on [shinylive.io](https://shinylive.io/py/examples/). (For embedding Shinylive applications in Quarto documents, it is technically possible, as this document shows, but it is a manual process as of this writing.)
 
 To run these examples, you can use [shinylive.io](https://shinylive.io/py/examples/), or you can install shiny and htmltools from GitHub:
 
-```
+```default
 pip install git+https://github.com/posit-dev/py-htmltools
 pip install git+https://github.com/posit-dev/py-shiny
 ```
