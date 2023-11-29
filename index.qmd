@@ -5,7 +5,9 @@ filters:
   - shinylive
 ---
 
-Shiny Express is a new way of writing Shiny apps that's intended to be easier to learn and quicker to write. It is especially appropriate for beginners and for simple apps.
+Shiny Express is a new way of writing Shiny apps that is intended to be easier to learn and quicker to write. We think that writing Shiny Express is comparable to Streamlit in terms of how easily you can create an app, but Shiny Express does not limit you the way that Streamlit does -- there is a much higher ceiling to what you can do with Shiny Express.
+
+Shiny Express is still Shiny, just with a simpler syntax. It is currently available in the development version of Shiny on GitHub, but not on the released version on PyPI.
 
 ::: {.callout-note}
 Shiny Express is still in active development. If you have comments or questions, please use the the [#py-shiny channel in Discord](https://discord.com/channels/1109483223987277844/1112869981735104553).
@@ -65,6 +67,7 @@ Here's what's different in the Classic app:
 
 Shiny Express apps do a these things implicitly, instead of requiring you to do them explicitly.
 
+### Installation
 
 As of this writing, Shiny Express has been merged to main but not published to PyPI. It can also be used on [shinylive.io](https://shinylive.io/py/examples/). (For embedding Shinylive applications in Quarto documents, it is technically possible, as this document shows, but it is a manual process as of this writing.)
 
