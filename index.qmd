@@ -305,16 +305,16 @@ This can be useful in some cases, like if you're writing a function that returns
 
 ### Page-level containers
 
-In a Classic app, the UI always has a top-level `page_` container, like `page_fluid()`, or `page_sidebar()`.
+In a Classic app, the UI always has a top-level `page_` container, like `page_fluid()`, `page_fillable()`, or `page_sidebar()`.
 
 In an Express app, there is also a top-level `page_` container, but the user does not need to call the function explicitly.
 
-The default page container is `page_fluid()`. However, if you call `with layout.sidebar()`, then it will automatically set the page container to `page_sidebar()`.
+The default page container is `page_fillable()`. However, if you call `with layout.sidebar()`, then it will automatically set the page container to `page_sidebar()`.
 
-You can set the page-level container explicitly by calling `layout.set_page()`. For example, suppose you want to use `page_fixed()` instead of `page_fluid()`, because you want a fixed-width content area. You would simply call this at the top of your app:
+You can set the page-level container explicitly by calling `layout.set_page()`. For example, suppose you want to use `page_fixed()` instead of `page_fillable()` (because you want flowing content with a constrained width). You would simply call this at the top of your app:
 
 ```{.python}
-layout.set_page(layout_page_fixed())
+layout.set_page(layout.page_fixed())
 ```
 
 
