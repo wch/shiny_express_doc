@@ -43,7 +43,7 @@ If you've seen traditional Shiny applications (we'll call them "Classic" for now
 #| viewerHeight: 300
 from shiny import App, ui, render
 
-app_ui = ui.page_fluid(
+app_ui = ui.page_fillable(
     ui.input_slider("n", "N", min=1, max=50, value=30),
     ui.output_text_verbatim("txt"),
 )
@@ -170,7 +170,7 @@ In Classic, UI and server logic are declared separately, with the UI containing 
 from shiny import ui, render, reactive, App
 from datetime import datetime
 
-app_ui = ui.page_fluid(
+app_ui = ui.page_fillable(
     ui.h1("Title"),
     ui.output_text_verbatim("greeting"),
 )
