@@ -329,8 +329,8 @@ These are the components currently available in `express.layout`. Each of them h
 - `card`
 - `accordion`
 - `accordion_panel`
-- `navset_tab`
-- `navset_card_tab`
+- `navset`
+- `navset_card`
 - `nav`
 - `p`
 - `div`
