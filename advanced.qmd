@@ -3,7 +3,7 @@ title: "Shiny Express: Advanced topics"
 format: html
 ---
 
-Shiny Express is built on top of "Classic" Shiny -- everything that you can do with Shiny Express you can also do in Classic Shiny. The reverse isn't exactly true -- there are times where you'll hit the limits of Shiny Express and need to use Classic Shiny.
+Shiny Express is built on top of "Core" Shiny -- everything that you can do with Shiny Express you can also do in Shiny Core. The reverse isn't exactly true -- there are times where you'll hit the limits of Shiny Express and need to use Shiny Core.
 
 This document explains some of the technical details behind how Shiny Express works. Most Shiny Express users don't need to read this document, but if you want to understand how it works under the hood, or want to do something more sophisticated with Shiny Express, you might find this document useful.
 
@@ -14,7 +14,7 @@ This page is still a work in progress, and some sections are not yet complete!
 
 ### Special evaluation of Shiny Express app code
 
-In a Classic Shiny app, when you run `shiny run app.py` from the command line, it effectively runs the Python code in app.py. In that code, you must create an object named `app`, which is a `Shiny.App` object. That object also conforms to the [ASGI application specification](https://asgi.readthedocs.io/en/latest/specs/main.html), which means that it is a web application that can be run by an ASGI web server. For Shiny, we use [uvicorn](https://www.uvicorn.org/) as the web server.
+In a Shiny Core app, when you run `shiny run app.py` from the command line, it effectively runs the Python code in app.py. In that code, you must create an object named `app`, which is a `Shiny.App` object. That object also conforms to the [ASGI application specification](https://asgi.readthedocs.io/en/latest/specs/main.html), which means that it is a web application that can be run by an ASGI web server. For Shiny, we use [uvicorn](https://www.uvicorn.org/) as the web server.
 
 In a Shiny Express app, you do not explicitly create an object named `app`; you actually do not create a `Shiny.App` object anywhere. That is done automatically for you, when Shiny detects that it is a Shiny Express app.
 
@@ -35,10 +35,10 @@ Next:
 
 As mentioned above, the code of an Express app is evaluated in a special way. This is needed because the code needs to be evaluated in a way that is similar to Jupyter notebooks: in a Jupyter notebook, the results of most top-level statements are rendered in the notebook. Jupyter does this by evaluating each statement and calling `IPython.display.display()` on the return value. In Shiny Express, we need to do something similar.
 
-Before diving into Shiny Express, let's talk about how Shiny Classic works. In Shiny Classic, you create UI by calling pure functions that return objects. Containership is expressed by passing children as arguments into the parent when the latter is being created. Eventually, the top-level parent is passed to Shiny via the `App` object (or returned from a `@render.ui`).
+Before diving into Shiny Express, let's talk about how Shiny Core works. In Shiny Core, you create UI by calling pure functions that return objects. Containership is expressed by passing children as arguments into the parent when the latter is being created. Eventually, the top-level parent is passed to Shiny via the `App` object (or returned from a `@render.ui`).
 
 ```{.python}
-# Shiny Classic
+# Shiny Core
 app_ui = ui.page_fillable(
     widget1(),
     widget2(),
@@ -64,7 +64,7 @@ There's an inherent tension in these decisions. What seems to be the case is tha
 
 But imperative UI starts to run into trouble very quickly, because programming against side-effects is harder than programming against values. For example, consider a function that takes a title as an argument, which could either be a string or an HTML element. How would you pass an HTML element if the very act of constructing an `<h1>` causes it to be emitted as output? Or think about a function that takes a while to generate some UI; if UI is just returned objects, you can trivially cache the results in any number of naturally Pythonic ways, but if it's side effects, you have to figure out some way of intercepting those side effects, and cache them using some custom mechanism.
 
-The `display()` approach of Jupyter/Quarto/Express serves as a compromise between Shiny Classic's functional approach and Streamlit's imperative approach. The code looks very similar to imperative code, but we're able to re-use most of our UI components even though they use the pure functional style. (Existing container components cannot be used in Express, as explained in the next section.)
+The `display()` approach of Jupyter/Quarto/Express serves as a compromise between Shiny Core's functional approach and Streamlit's imperative approach. The code looks very similar to imperative code, but we're able to re-use most of our UI components even though they use the pure functional style. (Existing container components cannot be used in Express, as explained in the next section.)
 
 One special challenge is dealing with expressions that are not at the top-level; that is, in functions. If you define a function in a Quarto code chunk or Jupyter notebook cell, its expressions will not be displayed/printed. The same is true in Shiny Express. However, it's clearly desirable to be able to write functions that express UI, and it'd be great to do it without having to explicitly call `sys.displayhook()` on every piece of UI. The `@display_body` decorator does this by transforming a function's body to behave like the top level (and see also `@render.display`, which is sort of like `@render.ui` plus `@display_body` combined).
 
@@ -73,7 +73,7 @@ One special challenge is dealing with expressions that are not at the top-level;
 - Same/similar paradigm as Quarto chunk or Jupyter notebook cell.
 - Fewer commas/parentheses.
 
-#### Classic advantages:
+#### Core advantages:
 
 - Easier refactoring of complicated UI (extracting into variables, parameterized functions, caching, etc.).
 - Can write apps in Python modules/packages.
@@ -81,14 +81,14 @@ One special challenge is dealing with expressions that are not at the top-level;
 
 ### Containers as context managers
 
-The prior two differences make container components a special challenge for Shiny Express. Shiny Classic's UI components are passed as function arguments, but Shiny Express's render functions make this approach untenable; Python won't let you declare a decorated function and pass it as a function argument at the same time.
+The prior two differences make container components a special challenge for Shiny Express. Shiny Core's UI components are passed as function arguments, but Shiny Express's render functions make this approach untenable; Python won't let you declare a decorated function and pass it as a function argument at the same time.
 
-As a result, you can't use Shiny Classic's container UI functions with Shiny Express. Instead, we've created a Shiny Express port for each of our container functions.
+As a result, you can't use Shiny Core's container UI functions with Shiny Express. Instead, we've created a Shiny Express port for each of our container functions.
 
-Classic syntax:
+Core syntax:
 
 ```{.python}
-# Shiny Classic
+# Shiny Core
 app_ui = ui.page_fillable(
     ui.card(
         ui.input_slider(),
@@ -125,7 +125,7 @@ These new `shiny.express.layout` container functions do not return objects, but 
 - Makes it possible to put render functions inside UI containers.
 - Fewer commas/parentheses.
 
-#### Classic advantages:
+#### Core advantages:
 
 - As before, easier refactoring of complicated UI (extracting into variables, parameterized functions, caching, etc.).
 - Container function signatures make it easier to see what arguments are allowed/required.
@@ -134,10 +134,10 @@ These new `shiny.express.layout` container functions do not return objects, but 
 
 ### `render` functions automatically create outputs
 
-In the Classic version of the previous example app, the server function contains a `@render.plot; def plot1()`, and the UI contains a corresponding output, `ui.output_plot("plot1")`. The output component is how Shiny Classic knows where to put the plot on the page.
+In the Core version of the previous example app, the server function contains a `@render.plot; def plot1()`, and the UI contains a corresponding output, `ui.output_plot("plot1")`. The output component is how Shiny Core knows where to put the plot on the page.
 
 ```{.python}
-# Shiny Classic
+# Shiny Core
 app_ui = ui.page_fillable(
     ui.card(
         ui.input_slider(),
@@ -228,12 +228,12 @@ ui.output_plot("plot1")
 
 ### Shared objects
 
-In a Shiny Classic app, each time a web browser visits the page, Shiny executes the server function once; any objects created inside of the server function (this includes reactive and regular non-reactive objects) are scoped to that user session.
+In a Shiny Core app, each time a web browser visits the page, Shiny executes the server function once; any objects created inside of the server function (this includes reactive and regular non-reactive objects) are scoped to that user session.
 
 Global objects -- those that are created outside of the server function -- are shared across all sessions. This is useful if there are slow operations that only need to be done once, like loading a large data set. Sharing large objects can also significantly reduce the memory load of the application.
 
 ```{.python}
-# Shiny Classic
+# Shiny Core
 
 # Global objects here are shared across all sessions (within a Python process)
 df = pd.read_csv("big_data.csv")
