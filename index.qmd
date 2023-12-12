@@ -34,7 +34,7 @@ def txt():
 
 The slider input comes from `ui.input_slider()`, and the text output is a function that's decorated with `@render.text` and returns a string.
 
-If you've seen traditional Shiny applications (we'll call them "Classic" for now), you'll notice some important differences. Here's the same app written in Shiny Classic form:
+If you've seen traditional Shiny applications (which we'll now refer to as "Shiny Core" apps), you'll notice some important differences. Here's the same app written in Shiny Core form:
 
 ```{shinylive-python}
 #| standalone: true
@@ -58,7 +58,7 @@ app = App(app_ui, server)
 
 Not only is there significantly less code in the Express version, but there are fewer concepts to (mis)understand or be intimidated by.
 
-Here's what's different in the Classic app:
+Here's what's different in the Core app:
 
 - The UI is created explicitly in a variable named `app_ui`, using nested calls to UI component functions.
 - There is an explicitly defined server function. (This function is executed once for each browser session that connects to the app).
@@ -104,7 +104,7 @@ def plot():
     plt.hist(data, bins=input.num_bins())
 ```
 
-Contrast the Shiny Express code above with the Shiny Classic equivalent below:
+Contrast the Shiny Express code above with the Shiny Core equivalent below:
 
 ```{shinylive-python}
 #| standalone: true
@@ -135,24 +135,23 @@ app = App(app_ui, server)
 
 Some things to notice:
 
-- In the Classic app, we first used the page-level component `ui.page_sidebar()`, and nested inside of that, a `ui.sidebar()`.
+- In the Core app, we first used the page-level component `ui.page_sidebar()`, and nested inside of that, a `ui.sidebar()`.
 - In the Express app, we created a sidebar using `with layout.sidebar()`. (Under the hood, this component tells Shiny Express that the parent page component is `ui.page_sidebar()`).
-- Notice that with the Express app used `express.layout.sidebar()`, while the Classic app used `ui.sidebar()`. These are not quite the same thing -- the function in `express.layout` is actually a special wrapper for the function in `ui`, which can be used as a context manager.
+- Notice that with the Express app used `express.layout.sidebar()`, while the Core app used `ui.sidebar()`. These are not quite the same thing -- the function in `express.layout` is actually a special wrapper for the function in `ui`, which can be used as a context manager.
 
 ## Motivation
 
-Shiny Classic applications
-With Shiny Express, our hope is to introduce a gentler simplicity/power tradeoff, that is nearly as easy as Streamlit but 1) not nearly as limited, and 2) leads you most of the way to Shiny Classic.
+With Shiny Express, our hope is to introduce a gentler simplicity/power tradeoff, that is nearly as easy as Streamlit but 1) not nearly as limited, and 2) leads you most of the way to Shiny Core.
 
 ## Caveats
 
-While we believe that Shiny Express will turn out to be an effective tool for those new to Shiny, we also believe that it will not be appropriate for all use cases--hence our continuing belief in the Shiny Classic model. A recurring theme you will find in the finer points below is that Shiny Express is easier to write but harder to manipulate and reason about, while Shiny Classic demands more up-front learning and some small inconveniences in return for being easier to read and reason about as your apps get larger.
+While we believe that Shiny Express will turn out to be an effective tool for those new to Shiny, we also believe that it will not be appropriate for all use cases--hence our continuing belief in the Shiny Core model. A recurring theme you will find in the finer points below is that Shiny Express is easier to write but harder to manipulate and reason about, while Shiny Core demands more up-front learning and some small inconveniences in return for being easier to read and reason about as your apps get larger.
 
-We also want to acknowledge the inherent risk of introducing a second (or depending on how you count, also a third and fourth!) way of writing Shiny apps. One risk is that Shiny Express will lead users into a learning cul-de-sac that is then harder to grow out of (and into Shiny Classic) than if they had just learned Shiny in the first place--as we see Streamlit users cling to it long after they have left the domain where Streamlit works well. Another risk is that having two ways of doing things is just going to be confusing (see Panel, or on the mostly-positive side, Matplotlib).
+We also want to acknowledge the inherent risk of introducing a second (or depending on how you count, also a third and fourth!) way of writing Shiny apps. One risk is that Shiny Express will lead users into a learning cul-de-sac that is then harder to grow out of (and into Shiny Core) than if they had just learned Shiny in the first place--as we see Streamlit users cling to it long after they have left the domain where Streamlit works well. Another risk is that having two ways of doing things is just going to be confusing (see Panel, or on the mostly-positive side, Matplotlib).
 
-## Differences between Express and Classic
+## Differences between Express and Core
 
-The main differences between Shiny Express and Classic are the following:
+The main differences between Shiny Express and Core are the following:
 
 - There is no separation between UI and server code. The UI and server code is mixed together.
 - In Shiny Express, UI components can be nested by writing `with layout.xx()`, where `layout.xx()` is a component that can contain other UI elements.
@@ -161,12 +160,12 @@ The main differences between Shiny Express and Classic are the following:
 
 ### No separation between UI and server code
 
-In Classic, UI and server logic are declared separately, with the UI containing `ui.output_xxx` objects to indicate _where_ each output goes and the server containing the logic indicating _what_ each output is.
+In Core, UI and server logic are declared separately, with the UI containing `ui.output_xxx` objects to indicate _where_ each output goes and the server containing the logic indicating _what_ each output is.
 
 ```{shinylive-python}
 #| standalone: true
 #| components: [editor, viewer]
-# Classic
+# Core
 from shiny import ui, render, reactive, App
 from datetime import datetime
 
@@ -218,7 +217,7 @@ Notice how `greeting` in this app does _not_ have a corresponding call to `outpu
 - Avoids having to write code in two different places for a single output, and having to make the IDs match up.
 - No need to write nested function declarations (i.e. functions inside the server function), which can be surprising to Python programmers.
 
-#### Classic advantages:
+#### Core advantages:
 
 - UI structure is clearer to read, reorder, and restructure. This advantage grows as app UIs grow larger.
 - Explicit server function declaration gave us a natural place to put code that should only execute at startup (top level) versus for each session (server function body).
@@ -227,13 +226,13 @@ Notice how `greeting` in this app does _not_ have a corresponding call to `outpu
 
 We'll use the term _layout components_ to refer to components that contain other components as children. For example, a sidebar is a layout component because it contains other components, whereas a `input_text()` is not a layout component because it has no children.
 
-In Shiny Classic, all components are available from the `ui` submodule, for example, `ui.sidebar()`, and `ui.input_text()`. You might create a simple app UI like this:
+In Shiny Core, all components are available from the `ui` submodule, for example, `ui.sidebar()`, and `ui.input_text()`. You might create a simple app UI like this:
 
 ```{shinylive-python}
 #| standalone: true
 #| components: [editor, viewer]
 #| layout: vertical
-# Classic
+# Core
 from shiny import ui, render, App
 
 app_ui = ui.page_sidebar(
@@ -289,7 +288,7 @@ with layout.row():
         # Content here...
 ```
 
-In an Express app, you can also still use Classic layout components, like this:
+In an Express app, you can also still use Core layout components, like this:
 
 ```{.python}
 ui.row(
@@ -305,7 +304,7 @@ This can be useful in some cases, like if you're writing a function that returns
 
 ### Page-level containers
 
-In a Classic app, the UI always has a top-level `page_` container, like `page_fluid()`, `page_fillable()`, or `page_sidebar()`.
+In a Core app, the UI always has a top-level `page_` container, like `page_fluid()`, `page_fillable()`, or `page_sidebar()`.
 
 In an Express app, there is also a top-level `page_` container, but the user does not need to call the function explicitly.
 
