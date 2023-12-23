@@ -95,19 +95,15 @@ The example above shows a very bare-bones Shiny application. Here's one that's a
 #| layout: vertical
 #| viewerHeight: 300
 import matplotlib.pyplot as plt
-import numpy as np
 from shiny import render
 from shiny.express import input, ui
 
-np.random.seed(0)
-data = np.random.randn(10000)
-
 with ui.sidebar():
-    ui.input_slider("num_bins", "Number of Bins", min=1, max=50, value=30)
+    ui.input_slider("n", "Number of points", min=1, max=20, value=10)
 
 @render.plot
 def plot():
-    plt.hist(data, bins=input.num_bins())
+    plt.scatter(range(input.n()), range(input.n()))
 ```
 
 Contrast the Shiny Express code above with the Shiny Core equivalent below:
@@ -118,23 +114,19 @@ Contrast the Shiny Express code above with the Shiny Core equivalent below:
 #| layout: vertical
 #| viewerHeight: 300
 import matplotlib.pyplot as plt
-import numpy as np
 from shiny import App, ui, render
 
 app_ui = ui.page_sidebar(
     ui.sidebar(
-        ui.input_slider("num_bins", "Number of Bins", min=1, max=50, value=30),
+        ui.input_slider("n", "Number of points", min=1, max=20, value=10),
     ),
     ui.output_plot("plot"),
 )
 
 def server(input, output, session):
-    np.random.seed(0)
-    data = np.random.randn(10000)
-
     @render.plot
     def plot():
-        plt.hist(data, bins=input.num_bins())
+        plt.scatter(range(input.n()), range(input.n()))
 
 app = App(app_ui, server)
 ```
@@ -353,26 +345,22 @@ With `page_opts(fillable=False)`, the contents of the page will display at their
 #| standalone: true
 #| components: [viewer]
 #| layout: vertical
-#| viewerHeight: 400
+#| viewerHeight: 300
 import matplotlib.pyplot as plt
-import numpy as np
 from shiny import render
 from shiny.express import input, ui
-
-np.random.seed(0)
-data = np.random.randn(10000)
 
 ui.page_opts(fillable=False)
 
 with ui.sidebar():
-    ui.input_slider("num_bins", "Number of Bins", min=1, max=50, value=30)
+    ui.input_slider("n", "Number of points", min=1, max=20, value=10)
 
 with ui.pre():
     "ui.page_opts(fillable=False)"
 
 @render.plot
 def plot():
-    plt.hist(data, bins=input.num_bins())
+    plt.scatter(range(input.n()), range(input.n()))
 ```
 
 
@@ -384,24 +372,20 @@ With `page_opts(fillable=True)`, the contents will try to scale to fit the windo
 #| layout: vertical
 #| viewerHeight: 300
 import matplotlib.pyplot as plt
-import numpy as np
 from shiny import render
 from shiny.express import input, ui
-
-np.random.seed(0)
-data = np.random.randn(10000)
 
 ui.page_opts(fillable=True)
 
 with ui.sidebar():
-    ui.input_slider("num_bins", "Number of Bins", min=1, max=50, value=30)
+    ui.input_slider("n", "Number of points", min=1, max=20, value=10)
 
 with ui.pre():
     "ui.page_opts(fillable=True)"
 
 @render.plot
 def plot():
-    plt.hist(data, bins=input.num_bins())
+    plt.scatter(range(input.n()), range(input.n()))
 ```
 
 
