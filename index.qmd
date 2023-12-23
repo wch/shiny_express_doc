@@ -10,8 +10,11 @@ Shiny Express is a new way of writing Shiny apps that is intended to be easier t
 Shiny Express is still Shiny, just with a simpler syntax. It is currently available in the development version of Shiny on GitHub, but not on the released version on PyPI.
 
 ::: {.callout-note}
-Shiny Express is still in active development. If you have comments or questions, please use the the [#py-shiny channel in Discord](https://discord.com/channels/1109483223987277844/1112869981735104553).
+Shiny Express is still in active development. The first Shiny release it was in is 0.6.1, released on 2023-12-22. Since then, Express has had some changes in the development version of Shiny, which can be installed from GitHub. This document covers the latest development version, **not** Shiny 0.6.1.
+
+If you have comments or questions, please use the the [#py-shiny channel in Discord](https://discord.com/channels/1109483223987277844/1112869981735104553).
 :::
+
 
 ## Quickstart
 
@@ -22,8 +25,8 @@ The best way to introduce Shiny Express is by example. Here is a simple "Hello W
 #| components: [editor, viewer]
 #| layout: vertical
 
-from shiny import ui, render
-from shiny.express import input
+from shiny import render
+from shiny.express import input, ui
 
 ui.input_slider("n", "N", min=1, max=50, value=30)
 
@@ -31,6 +34,8 @@ ui.input_slider("n", "N", min=1, max=50, value=30)
 def txt():
     return f"Hello! n*2 is {input.n() * 2}."
 ```
+
+The first thing to notice is that `ui` is imported from `shiny.express`, as opposed to being imported from `shiny`.
 
 The slider input comes from `ui.input_slider()`, and the text output is a function that's decorated with `@render.text` and returns a string.
 
@@ -40,10 +45,9 @@ If you've seen traditional Shiny applications (which we'll now refer to as "Shin
 #| standalone: true
 #| components: [editor, viewer]
 #| layout: vertical
-#| viewerHeight: 300
 from shiny import App, ui, render
 
-app_ui = ui.page_fillable(
+app_ui = ui.page_fixed(
     ui.input_slider("n", "N", min=1, max=50, value=30),
     ui.output_text_verbatim("txt"),
 )
@@ -58,18 +62,20 @@ app = App(app_ui, server)
 
 Not only is there significantly less code in the Express version, but there are fewer concepts to (mis)understand or be intimidated by.
 
+
 Here's what's different in the Core app:
 
+- `from shiny import ui`, instead of `from shiny.express import ui`.
 - The UI is created explicitly in a variable named `app_ui`, using nested calls to UI component functions.
 - There is an explicitly defined server function. (This function is executed once for each browser session that connects to the app).
 - The text output is created with `output_text_verbatim("txt")`. For Shiny Express mode, we didn't have to create that output -- it's created automatically when it sees the `@render.text`.
 - There is an explicitly created object named `app`, which is a `shiny.App()` object.
 
-Shiny Express apps do a these things implicitly, instead of requiring you to do them explicitly.
+Shiny Express apps do these things implicitly, instead of requiring you to do them explicitly.
 
 ## Installation
 
-As of this writing, Shiny Express has been merged to main but not published to PyPI. It can also be used on [shinylive.io](https://shinylive.io/py/examples/). (For embedding Shinylive applications in Quarto documents, it is technically possible, as this document shows, but it is a manual process as of this writing.)
+As of this writing, Shiny Express is in Shiny 0.6.1, which is on PyPI. However, there have been changes to Shiny Express in the development version since then, and this document reflects those changes. It can also be used on [shinylive.io](https://shinylive.io/py/examples/). (For embedding Shinylive applications in Quarto documents, it is technically possible, as this document shows, but it is a manual process as of this writing.)
 
 To run these examples, you can use [shinylive.io](https://shinylive.io/py/examples/), or you can install shiny and htmltools from GitHub:
 
@@ -81,7 +87,7 @@ pip install git+https://github.com/posit-dev/py-shiny
 
 ## Basic app with a plot
 
-The example above shows a very bare-bones Shiny application. Here's one that's a little more sophisticated, with a layout component (a sidebar), and a plot.
+The example above shows a very bare-bones Shiny application. Here's one that's a little more sophisticated, with a container component (a sidebar), and a plot.
 
 ```{shinylive-python}
 #| standalone: true
@@ -90,13 +96,13 @@ The example above shows a very bare-bones Shiny application. Here's one that's a
 #| viewerHeight: 300
 import matplotlib.pyplot as plt
 import numpy as np
-from shiny import ui, render
-from shiny.express import input, layout
+from shiny import render
+from shiny.express import input, ui
 
 np.random.seed(0)
 data = np.random.randn(10000)
 
-with layout.sidebar():
+with ui.sidebar():
     ui.input_slider("num_bins", "Number of Bins", min=1, max=50, value=30)
 
 @render.plot
@@ -115,9 +121,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from shiny import App, ui, render
 
-np.random.seed(0)
-data = np.random.randn(10000)
-
 app_ui = ui.page_sidebar(
     ui.sidebar(
         ui.input_slider("num_bins", "Number of Bins", min=1, max=50, value=30),
@@ -126,6 +129,9 @@ app_ui = ui.page_sidebar(
 )
 
 def server(input, output, session):
+    np.random.seed(0)
+    data = np.random.randn(10000)
+
     @render.plot
     def plot():
         plt.hist(data, bins=input.num_bins())
@@ -136,8 +142,8 @@ app = App(app_ui, server)
 Some things to notice:
 
 - In the Core app, we first used the page-level component `ui.page_sidebar()`, and nested inside of that, a `ui.sidebar()`.
-- In the Express app, we created a sidebar using `with layout.sidebar()`. (Under the hood, this component tells Shiny Express that the parent page component is `ui.page_sidebar()`).
-- Notice that with the Express app used `express.layout.sidebar()`, while the Core app used `ui.sidebar()`. These are not quite the same thing -- the function in `express.layout` is actually a special wrapper for the function in `ui`, which can be used as a context manager.
+- In the Express app, we created a sidebar using `with ui.sidebar()`. (Under the hood, this component tells Shiny Express that the parent page component is `ui.page_sidebar()`).
+- Notice that with the Express app used `express.ui.sidebar()`, while the Core app used `ui.sidebar()`. These are not quite the same thing -- the function in `express.ui` is actually a special wrapper for the function in `ui` which can be used as a context manager -- that is it can be used with `with`.
 
 ## Motivation
 
@@ -154,13 +160,13 @@ We also want to acknowledge the inherent risk of introducing a second (or depend
 The main differences between Shiny Express and Core are the following:
 
 - There is no separation between UI and server code. The UI and server code is mixed together.
-- In Shiny Express, UI components can be nested by writing `with layout.xx()`, where `layout.xx()` is a component that can contain other UI elements.
+- In Shiny Express, UI components can be nested by writing `with ui.xx()`, where `ui.xx()` is a component that can contain other UI elements. In Shiny Core, you use nested function calls, like `ui.xx(ui.yy())`.
 - Shiny Express apps have `from shiny.express import ...`, `import shiny.express`, or `from shiny import express`. The presence of any of these statements tells Shiny that the app should be run in Express mode.
 
 
 ### No separation between UI and server code
 
-In Core, UI and server logic are declared separately, with the UI containing `ui.output_xxx` objects to indicate _where_ each output goes and the server containing the logic indicating _what_ each output is.
+In Core, UI and server logic are declared separately, with the UI containing `ui.output_xxx` objects to indicate _where_ each output goes and the server containing the logic in a `@render.xx` function indicating _what_ each output is.
 
 ```{shinylive-python}
 #| standalone: true
@@ -169,7 +175,7 @@ In Core, UI and server logic are declared separately, with the UI containing `ui
 from shiny import ui, render, reactive, App
 from datetime import datetime
 
-app_ui = ui.page_fillable(
+app_ui = ui.page_fixed(
     ui.h1("Title"),
     ui.output_text_verbatim("greeting"),
 )
@@ -222,11 +228,23 @@ Notice how `greeting` in this app does _not_ have a corresponding call to `outpu
 - UI structure is clearer to read, reorder, and restructure. This advantage grows as app UIs grow larger.
 - Explicit server function declaration gave us a natural place to put code that should only execute at startup (top level) versus for each session (server function body).
 
-### Layout components using `with layout.xx()`
+### Container components using `with ui.xx()`
 
-We'll use the term _layout components_ to refer to components that contain other components as children. For example, a sidebar is a layout component because it contains other components, whereas a `input_text()` is not a layout component because it has no children.
+Broadly speaking, there are two kinds of UI components in Shiny: _container components_, which, as the name suggests, contain other components, and _non-container components_, which don't. (You can also think of the UI as a tree data structure; container components have children, while non-container components are leaf, or terminal nodes in the tree.)
 
-In Shiny Core, all components are available from the `ui` submodule, for example, `ui.sidebar()`, and `ui.input_text()`. You might create a simple app UI like this:
+Here are some examples of container components:
+
+- `sidebar()`
+- `card()`
+- `layout_columns()`
+- `div()`
+
+Here are some examples of non-container components:
+
+- `input_text()`
+- `output_plot()`
+
+In Shiny Core, all components are available from the `ui` submodule, for example, `ui.sidebar()`, and `ui.input_text()`, and to nest the components, you nest the function calls, like `ui.sidebar(ui.input_text())`. You might create a simple app UI like this:
 
 ```{shinylive-python}
 #| standalone: true
@@ -257,84 +275,139 @@ app = App(app_ui, server)
 
 In Express apps, there are the following differences:
 
-- There's no need to call `page_sidebar()` -- simply using `ui.sidebar()` tells Shiny to use `page_sidebar()`.
-- Instead of `ui.sidebar()`, you use `with layout.sidebar()`. You still call `layout.sidebar()` with the named arguments, like `fg` and `bg`. The unnamed arguments will be used as children to the `sidebar`.
-- You can even put the server code inside of the `with` statement.
+- Instead of `from shiny import ui`, you use `from shiny.express import ui`. (Almost all functions from `shiny.ui` have corresponding functions in `shiny.express.ui`.)
+- There's no need to call `page_sidebar()` -- if you simply use `ui.sidebar()`, Shiny will infer that it needs to use `page_sidebar()`.
+- Container components, like `ui.sidebar()` are _context managers_, and used via `with ui.sidebar()`. Their child components go within the `with` block.
+- You can put the server code (like `@reactive.calc` and `@render.text`) inside of the `with` statement blocks.
 
 ```{shinylive-python}
 #| standalone: true
 #| components: [editor, viewer]
 #| layout: vertical
 # Express
-from shiny import ui, render, App
-from shiny.express import input, layout
+from shiny import render, App
+from shiny.express import input, ui
 
-with layout.sidebar(fg="white", bg="black"):
+with ui.sidebar(fg="white", bg="black"):
     ui.input_text("txt_in", "Type something here:")
 
-with layout.card():
+with ui.card():
     @render.text
     def result():
         return f"You entered '{input.txt_in()}'."
 ```
 
-Most of the layout component functions from `shiny.ui` have corresponding functions in `shiny.express.layout`. If you find that Express lacks a layout component that you need, please let us know.
+In Shiny Express, container components are usually used as context managers, using `with`.
 
-Shiny Express layout functions can be nested, as in:
+::: {.callout-note}
+In unusual situations, you might want to create HTML content that doesn't use context managers. HTML tag functions, like `div()` and `span()` can actually be used as context managers or as regular functions, so the following are equivalent:
 
-```{.python}
-with layout.row():
-    with layout.column(6):
-        # Content here...
-```
+```{shinylive-python}
+#| standalone: true
+#| components: [editor, viewer]
+#| layout: vertical
+# Express
+from shiny.express import ui
 
-In an Express app, you can also still use Core layout components, like this:
+with ui.div():
+    with ui.pre(style="background-color: #eff;"):
+        "Hello!"
 
-```{.python}
-ui.row(
-    ui.column(
-        ...,
-        width=6
-    )
+ui.div(
+    ui.pre(
+        "Hello!",
+        style="background-color: #eff;",
+    ),
 )
 ```
 
-This can be useful in some cases, like if you're writing a function that returns some UI.
+More complex component functions, such as `sidebar()` and `card()`, can only be used as context managers.
+
+:::
 
 
-### Page-level containers
+### Page-level containers and options
 
 In a Core app, the UI always has a top-level `page_` container, like `page_fluid()`, `page_fillable()`, or `page_sidebar()`.
 
-In an Express app, there is also a top-level `page_` container, but the user does not need to call the function explicitly.
+With Shiny Express, you normally don't have to think about which `page_` function to use.
 
-The default page container is `page_fillable()`. However, if you call `with layout.sidebar()`, then it will automatically set the page container to `page_sidebar()`.
+Instead of you deciding which specific `page_` function to use, Shiny decides, based on:
 
-You can set the page-level container explicitly by calling `layout.set_page()`. For example, suppose you want to use `page_fixed()` instead of `page_fillable()` (because you want flowing content with a constrained width). You would simply call this at the top of your app:
+- The contents of the page -- for example, if there is a `sidebar()` at the top level, it will automatically use `page_sidebar()`.
+- Options that have been set with the `page_opts()` function.
+
+The [`page_opts()`](https://posit-dev.github.io/py-shiny/api/PageFunctions.html#shiny.express.ui.page_opts) function can be used to set the title of the page, as well as the filling behavior of the contents.
 
 ```{.python}
-layout.set_page(layout.page_fixed())
+page_opts(
+    title="Data app",
+    fillable=True
+)
 ```
 
 
-### List of layout components
+With `page_opts(fillable=False)`, the contents of the page will display at their "natural" size. For example, with a plot, the default height is 400 pixels. If there is more content than fits in the window, a scroll bar will show up.
 
-These are the components currently available in `express.layout`. Each of them has a counterpart in `ui`.
+```{shinylive-python}
+#| standalone: true
+#| components: [viewer]
+#| layout: vertical
+#| viewerHeight: 400
+import matplotlib.pyplot as plt
+import numpy as np
+from shiny import render
+from shiny.express import input, ui
 
-- `sidebar`
-- `layout_column_wrap`
-- `column`
-- `row`
-- `card`
-- `accordion`
-- `accordion_panel`
-- `navset`
-- `navset_card`
-- `nav`
-- `p`
-- `div`
-- `span`
-- `pre`
+np.random.seed(0)
+data = np.random.randn(10000)
+
+ui.page_opts(fillable=False)
+
+with ui.sidebar():
+    ui.input_slider("num_bins", "Number of Bins", min=1, max=50, value=30)
+
+with ui.pre():
+    "ui.page_opts(fillable=False)"
+
+@render.plot
+def plot():
+    plt.hist(data, bins=input.num_bins())
+```
+
+
+With `page_opts(fillable=True)`, the contents will try to scale to fit the window, so that no scroll bar will be present. Some components, like plots, are "flexy" and can stretch to fit; other components, like text, are not flexy, and will stay their natural size.
+
+```{shinylive-python}
+#| standalone: true
+#| components: [viewer]
+#| layout: vertical
+#| viewerHeight: 300
+import matplotlib.pyplot as plt
+import numpy as np
+from shiny import render
+from shiny.express import input, ui
+
+np.random.seed(0)
+data = np.random.randn(10000)
+
+ui.page_opts(fillable=True)
+
+with ui.sidebar():
+    ui.input_slider("num_bins", "Number of Bins", min=1, max=50, value=30)
+
+with ui.pre():
+    "ui.page_opts(fillable=True)"
+
+@render.plot
+def plot():
+    plt.hist(data, bins=input.num_bins())
+```
+
+
+::: {.callout-note}
+These settings for `page_opts()` are passed to the [`shiny.ui.page_auto()`](https://posit-dev.github.io/py-shiny/api/ui.page_auto.html) function.
+:::
 
 
 ## Deploying Shiny Express apps

@@ -39,7 +39,7 @@ Before diving into Shiny Express, let's talk about how Shiny Core works. In Shin
 
 ```{.python}
 # Shiny Core
-app_ui = ui.page_fillable(
+app_ui = ui.page_fixed(
     widget1(),
     widget2(),
     widget3(),
@@ -89,7 +89,7 @@ Core syntax:
 
 ```{.python}
 # Shiny Core
-app_ui = ui.page_fillable(
+app_ui = ui.page_fixed(
     ui.card(
         ui.input_slider(),
         ui.output_plot("plot1"),
@@ -104,7 +104,7 @@ def server(input, output, session):
 app = App(app_ui, server)
 ```
 
-Express syntax (notice that we don't need to call `page_fillable()` because it is the default page type for Express):
+Express syntax (notice that we don't need to call `page_fixed()` because it is the default page type for Express):
 
 ```{.python}
 # Shiny Express
@@ -138,7 +138,7 @@ In the Core version of the previous example app, the server function contains a 
 
 ```{.python}
 # Shiny Core
-app_ui = ui.page_fillable(
+app_ui = ui.page_fixed(
     ui.card(
         ui.input_slider(),
         ui.output_plot("plot1"),
