@@ -30,14 +30,14 @@ from shiny.express import input, ui
 
 ui.input_slider("n", "N", min=1, max=50, value=30)
 
-@render.text
+@render.code
 def txt():
     return f"Hello! n*2 is {input.n() * 2}."
 ```
 
 The first thing to notice is that `ui` is imported from `shiny.express`, as opposed to being imported from `shiny`.
 
-The slider input comes from `ui.input_slider()`, and the text output is a function that's decorated with `@render.text` and returns a string.
+The slider input comes from `ui.input_slider()`, and the text output is a function that's decorated with `@render.code` and returns a string.
 
 If you've seen traditional Shiny applications (which we'll now refer to as "Shiny Core" apps), you'll notice some important differences. Here's the same app written in Shiny Core form:
 
@@ -49,11 +49,11 @@ from shiny import App, ui, render
 
 app_ui = ui.page_fixed(
     ui.input_slider("n", "N", min=1, max=50, value=30),
-    ui.output_text_verbatim("txt"),
+    ui.output_code("txt"),
 )
 
 def server(input, output, session):
-    @render.text
+    @render.code
     def txt():
         return f"Hello! n*2 is {input.n() * 2}."
 
@@ -68,7 +68,7 @@ Here's what's different in the Core app:
 - `from shiny import ui`, instead of `from shiny.express import ui`.
 - The UI is created explicitly in a variable named `app_ui`, using nested calls to UI component functions.
 - There is an explicitly defined server function. (This function is executed once for each browser session that connects to the app).
-- The text output is created with `output_text_verbatim("txt")`. For Shiny Express mode, we didn't have to create that output -- it's created automatically when it sees the `@render.text`.
+- The code output is created with `output_code("txt")`. For Shiny Express mode, we didn't have to create that output -- it's created automatically when it sees the `@render.code`.
 - There is an explicitly created object named `app`, which is a `shiny.App()` object.
 
 Shiny Express apps do these things implicitly, instead of requiring you to do them explicitly.
@@ -169,7 +169,7 @@ from datetime import datetime
 
 app_ui = ui.page_fixed(
     ui.h1("Title"),
-    ui.output_text_verbatim("greeting"),
+    ui.output_code("greeting"),
 )
 
 def server(input, output, session):
@@ -178,7 +178,7 @@ def server(input, output, session):
         reactive.invalidate_later(1)
         return datetime.now()
 
-    @render.text
+    @render.code
     def greeting():
         return f"Hello, world!\nIt's currently {time()}."
 
@@ -202,12 +202,12 @@ def time():
     reactive.invalidate_later(1)
     return datetime.now()
 
-@render.text
+@render.code
 def greeting():
     return f"Hello, world!\nIt's currently {time()}."
 ```
 
-Notice how `greeting` in this app does _not_ have a corresponding call to `output_text_verbatim("greeting")`. This is because in Shiny Express, the `render` functions automatically invoke that output function and add it to the page -- no need to do it manually.
+Notice how `greeting` in this app does _not_ have a corresponding call to `output_code("greeting")`. This is because in Shiny Express, the `render` functions automatically invoke that output function and add it to the page -- no need to do it manually.
 
 #### Express advantages:
 
@@ -252,12 +252,12 @@ app_ui = ui.page_sidebar(
         bg="black",
     ),
     ui.card(
-        ui.output_text_verbatim("result"),
+        ui.output_code("result"),
     )
 )
 
 def server(input, output, session):
-    @render.text
+    @render.code
     def result():
         return f"You entered '{input.txt_in()}'."
 
@@ -270,7 +270,7 @@ In Express apps, there are the following differences:
 - Instead of `from shiny import ui`, you use `from shiny.express import ui`. (Almost all functions from `shiny.ui` have corresponding functions in `shiny.express.ui`.)
 - There's no need to call `page_sidebar()` -- if you simply use `ui.sidebar()`, Shiny will infer that it needs to use `page_sidebar()`.
 - Container components, like `ui.sidebar()` are _context managers_, and used via `with ui.sidebar()`. Their child components go within the `with` block.
-- You can put the server code (like `@reactive.calc` and `@render.text`) inside of the `with` statement blocks.
+- You can put the server code (like `@reactive.calc` and `@render.code`) inside of the `with` statement blocks.
 
 ```{shinylive-python}
 #| standalone: true
@@ -284,7 +284,7 @@ with ui.sidebar(fg="white", bg="black"):
     ui.input_text("txt_in", "Type something here:")
 
 with ui.card():
-    @render.text
+    @render.code
     def result():
         return f"You entered '{input.txt_in()}'."
 ```

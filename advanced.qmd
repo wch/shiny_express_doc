@@ -1,6 +1,8 @@
 ---
 title: "Shiny Express: Advanced topics"
 format: html
+filters:
+  - shinylive
 ---
 
 Shiny Express is built on top of "Core" Shiny -- everything that you can do with Shiny Express you can also do in Shiny Core. The reverse isn't exactly true -- there are times where you'll hit the limits of Shiny Express and need to use Shiny Core.
@@ -66,7 +68,7 @@ But imperative UI starts to run into trouble very quickly, because programming a
 
 The `display()` approach of Jupyter/Quarto/Express serves as a compromise between Shiny Core's functional approach and Streamlit's imperative approach. The code looks very similar to imperative code, but we're able to re-use most of our UI components even though they use the pure functional style. (Existing container components cannot be used in Express, as explained in the next section.)
 
-One special challenge is dealing with expressions that are not at the top-level; that is, in functions. If you define a function in a Quarto code chunk or Jupyter notebook cell, its expressions will not be displayed/printed. The same is true in Shiny Express. However, it's clearly desirable to be able to write functions that express UI, and it'd be great to do it without having to explicitly call `sys.displayhook()` on every piece of UI. The `@display_body` decorator does this by transforming a function's body to behave like the top level (and see also `@render.display`, which is sort of like `@render.ui` plus `@display_body` combined).
+One special challenge is dealing with expressions that are not at the top-level; that is, in functions. If you define a function in a Quarto code chunk or Jupyter notebook cell, its expressions will not be displayed/printed. The same is true in Shiny Express. However, it's clearly desirable to be able to write functions that express UI, and it'd be great to do it without having to explicitly call `sys.displayhook()` on every piece of UI. The `@expressify` decorator does this by transforming a function's body to behave like the top level (and see also `@render.express`, which is sort of like `@render.ui` plus `@expressify` combined).
 
 #### Express advantages:
 
@@ -168,7 +170,7 @@ with layout.card():
 ```
 
 
-### Suspending/suppressing display of objects
+### Preventing display of objects with `ui.hold()`
 
 If for some reason, you want to create an object but not render it into the page at that location, one way to do it is to simply assign it to a variable:
 
@@ -178,7 +180,7 @@ x = widget()
 
 Just like in a Jupyter notebook, assigning the value to a variable prevents it from being displayed in the Shiny app. You can later put `x` on a line by itself to display it there.
 
-However, there are cases where you can't do this with Python. If you have a `@render.plot`, but don't want it to put an output there, you can't assign it to a variable with `x = ...`. This simply is not valid Python code:
+However, there are cases where you can't do this with Python. If you have a `@render.plot`, but don't want it to put an output right there, you can't assign it to a variable with `x = ...`. This simply is not valid Python code:
 
 ```{.python}
 # NOT valid code
@@ -187,15 +189,10 @@ def _():
     ...
 ```
 
-For cases like this, you can use `suspend_display`. This function can be used in two different ways:
-
-- As a context manager (`with suspend_display()`)
-- As a decorator (`@suspend_display`)
-
-Here is an example of use as a context manager:
+For cases like this, you can use `with ui.hold()`:
 
 ```{.python}
-with suspend_display():
+with ui.hold():
     @render.plot
     def plot1():
         ...
@@ -203,23 +200,100 @@ with suspend_display():
 
 You could also put more `render` functions in that same code block if you wanted.
 
-Here is an example of use as a decorator:
+You would have to add the corresponding output explicitly somewhere in your app:
 
 ```{.python}
-@suspend_display():
-@render.plot
-def plot1():
-    ...
+ui.output_plot("plot1", click=True)
 ```
 
-Either way you use it, you would have to add the corresponding output explicitly somewhere in your app:
+This can be useful when you want to add an `output_plot` with options that aren't available in the `render.plot()` function. (Although note that in a future version of Shiny, we plan to make all of those options, like `click`, available in the `render.plot()` function.)
+
+
+You can also use `with ui.hold() as x`, and then place `x` later in the page.
 
 ```{.python}
-ui.output_plot("plot1")
+# Create a card here...
+with ui.hold() as hello_card:
+    with ui.card():
+        with ui.span():
+            "This is a"
+            ui.span(" card", style="color: red;")
+
+
+ui.h3("Some content")
+
+# and display the card here
+hello_card
 ```
 
 
-### Strings are rendered in a `<pre>` tag
+### `@render.text()` for plain text, `@render.code()` for code
+
+When `@render.text()` is used, it defaults to displaying as plain text, and when `@render.code()` is used, it defaults to displaying in a monospaced font in a code block.
+
+```{shinylive-python}
+#| standalone: true
+#| components: [editor, viewer]
+#| layout: vertical
+#| viewerHeight: 300
+from shiny.express import render, ui
+
+@render.text
+def txt():
+    return "This is @render.text"
+
+ui.br()
+
+@render.code
+def code():
+    return "This is @render.code"
+```
+
+
+### Using Express syntax in functions with `@expressify`
+
+If you want to write a function using Express syntax (as opposed to Core syntax), you can use `@expressify`. In the example below, you can compare the syntax to the version that's written with Shiny Core syntax.
+
+
+```{shinylive-python}
+#| standalone: true
+#| components: [editor, viewer]
+#| layout: vertical
+#| viewerHeight: 300
+from shiny.express import expressify, ui
+
+# The Shiny Express syntax version
+@expressify
+def card(i: int):
+    with ui.card():
+        with ui.span():
+            "This is a card with @expressify: "
+            ui.span(str(i), style="color: red;")
+
+card(1)
+card(2)
+
+
+# The Shiny Core syntax version, with nested function calls
+def card_core(i: int):
+    from shiny import ui as sui
+
+    return sui.card(
+        sui.span(
+            "This is a card with Shiny Core: ",
+            sui.span(str(i), style="color: blue;"),
+        )
+    )
+
+
+card_core(1)
+card_core(2)
+```
+
+
+
+### `@render.express()`
+
 
 
 ### Code is run twice
