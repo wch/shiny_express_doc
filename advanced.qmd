@@ -5,6 +5,13 @@ filters:
   - shinylive
 ---
 
+::: {.callout-note}
+This document was written and updated during the development of Shiny Express, and some parts of it may now be out of date.
+
+Please see the [official documentation for Shiny Express](https://shiny.posit.co/py/docs/express-vs-core.html).
+:::
+
+
 Shiny Express is built on top of "Core" Shiny -- everything that you can do with Shiny Express you can also do in Shiny Core. The reverse isn't exactly true -- there are times where you'll hit the limits of Shiny Express and need to use Shiny Core.
 
 This document explains some of the technical details behind how Shiny Express works. Most Shiny Express users don't need to read this document, but if you want to understand how it works under the hood, or want to do something more sophisticated with Shiny Express, you might find this document useful.
