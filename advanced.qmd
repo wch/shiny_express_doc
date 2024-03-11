@@ -1,6 +1,9 @@
 ---
 title: "Shiny Express: Advanced topics"
-format: html
+format:
+  html:
+    include-in-header:
+      text: <meta http-equiv="refresh" content="0;URL='https://shiny.posit.co/py/docs/express-vs-core.html'">
 filters:
   - shinylive
 ---
